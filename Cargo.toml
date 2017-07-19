@@ -1,0 +1,9 @@
+[package]
+authors = ["Bond_009 <bond.009@outlook.com>"]
+description = "Image manipulation in Rust."
+name = "imir"
+version = "0.1.0"
+
+[dependencies]
+clap = "2.25.0"
+image = "0.14.0"
