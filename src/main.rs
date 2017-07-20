@@ -3,6 +3,7 @@ extern crate clap;
 extern crate image;
 
 use clap::{Arg, App};
+use image::ImageFormat;
 use std::fs::File;
 use std::path::Path;
 
@@ -30,36 +31,38 @@ fn main() {
                                .long("format")
                                .value_name("FORMAT")
                                .help("Sets the output format")
-                               .takes_value(true)
-                               .default_value("png")
-                               .required(false))
+                               .takes_value(true))
                           .get_matches();
 
-    let in_file_name = matches.value_of("input file").unwrap();
-
-    let in_file = Path::new(in_file_name);
+    let in_file = Path::new(matches.value_of("input file").unwrap());
 
     if !in_file.exists() {
-        panic!("Input file '{}' not found", in_file_name);
+        panic!("Input file '{}' not found", in_file.file_name().unwrap().to_str().unwrap());
     }
 
-    let img = image::open(&in_file).unwrap();
+    let img = image::open(in_file).unwrap();
 
-    let out_file_name = matches.value_of("output file").unwrap();
+    let out_file = Path::new(matches.value_of("output file").unwrap());
 
-    let ref mut out_file = File::create(&Path::new(out_file_name)).unwrap();
+    let fmt_string = matches.value_of("output format")
+                                .unwrap_or(out_file.extension().expect("File has no extension").to_str().unwrap());
 
-    let fmt_string = matches.value_of("output format").unwrap();
-
-    let fmt = match fmt_string {
-        "png" => image::PNG,
-        "jpeg" => image::JPEG,
-        "gif" => image::GIF,
-        "bmp" => image::BMP,
-        "ico" => image::ICO,
-        "ppm" => image::PPM,
-        _ => panic!("Unknown format '{}'", fmt_string)
+    let fmt = match get_image_format(fmt_string) {
+        None => panic!("Unsupported format '{}'", fmt_string),
+        Some(value) => value
     };
 
-    let _ = img.save(out_file, fmt).unwrap();
+    let _ = img.save(&mut File::create(&out_file).unwrap(), fmt).unwrap();
+}
+
+fn get_image_format(input : &str) -> Option<ImageFormat> {
+    match input {
+        "png" => Some(ImageFormat::PNG),
+        "jpg" | "jpeg" => Some(ImageFormat::JPEG),
+        "gif" => Some(ImageFormat::GIF),
+        "bmp" => Some(ImageFormat::BMP),
+        "ico" => Some(ImageFormat::ICO),
+        "ppm" => Some(ImageFormat::PPM),
+        _ => None
+    }
 }
